@@ -31,4 +31,9 @@ namespace R5.MongoRepository.Core
 			return _transactionSession.AbortTransaction();
 		}
 	}
+
+	public interface ISessionIdentityMaps
+	{
+
+	}
 }

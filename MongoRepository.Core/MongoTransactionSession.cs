@@ -13,7 +13,10 @@ namespace R5.MongoRepository.Core
 		private static object _sessionLock = new object();
 
 		internal static readonly TransactionOptions _transactionOptions
-			= new TransactionOptions(ReadConcern.Snapshot, writeConcern: WriteConcern.WMajority);
+			= new TransactionOptions(
+				ReadConcern.Snapshot, 
+				ReadPreference.Primary,
+				WriteConcern.WMajority);
 
 
 		public MongoTransactionSession(IMongoDatabase database)

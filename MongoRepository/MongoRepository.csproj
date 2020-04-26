@@ -9,6 +9,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="LanguageExt.Core" Version="3.4.13" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <ProjectReference Include="..\MongoRepository.Core\MongoRepository.Core.csproj" />
 	</ItemGroup>
 

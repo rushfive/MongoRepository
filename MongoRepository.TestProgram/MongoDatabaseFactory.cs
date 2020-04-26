@@ -16,8 +16,9 @@ namespace R5.MongoRepository.TestProgram
 			}
 
 			MongoClientSettings clientSettings = MongoClientSettings.FromConnectionString(connection.ToString());
-			var client = new MongoClient(clientSettings);
+			clientSettings.RetryWrites = true;
 
+			var client = new MongoClient(clientSettings);
 			return client.GetDatabase(connection.DatabaseName);
 		}
 	}

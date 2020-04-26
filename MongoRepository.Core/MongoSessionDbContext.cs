@@ -8,7 +8,7 @@ namespace R5.MongoRepository.Core
 	public interface IMongoSessionDbContext
 	{
 		IMongoDatabase Database { get; }
-		IMongoCollection<TDocument> GetCollection<TDocument>(string name);
+		IMongoCollection<TDocument> GetCollection<TDocument>();
 	}
 
 	public sealed class MongoSessionDbContext : IMongoSessionDbContext
@@ -22,7 +22,7 @@ namespace R5.MongoRepository.Core
 			Database = new SessionDatabase(database, transactionSession);
 		}
 
-		public IMongoCollection<TDocument> GetCollection<TDocument>(string name)
-			=> Database.GetCollection<TDocument>(name);
+		public IMongoCollection<TDocument> GetCollection<TDocument>()
+			=> Database.GetCollection<TDocument>(CollectionNameMap.For<TDocument>());
 	}
 }
