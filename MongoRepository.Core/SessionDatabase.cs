@@ -85,9 +85,7 @@ namespace R5.MongoRepository.Core
 		}
 
 		public IAsyncCursor<string> ListCollectionNames(ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
-		{
-			throw new NotImplementedException();
-		}
+			=> _database.ListCollectionNames(_transactionSession.GetSession(), options, cancellationToken);
 
 		public IAsyncCursor<string> ListCollectionNames(IClientSessionHandle session, ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
 		{
@@ -95,9 +93,7 @@ namespace R5.MongoRepository.Core
 		}
 
 		public Task<IAsyncCursor<string>> ListCollectionNamesAsync(ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
-		{
-			throw new NotImplementedException();
-		}
+			=> _database.ListCollectionNamesAsync(_transactionSession.GetSession(), options, cancellationToken);
 
 		public Task<IAsyncCursor<string>> ListCollectionNamesAsync(IClientSessionHandle session, ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
 		{
