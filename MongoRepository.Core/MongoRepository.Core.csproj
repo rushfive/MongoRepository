@@ -2,8 +2,8 @@
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<AssemblyName>MongoRepository.Core</AssemblyName>
-		<RootNamespace>MongoRepository.Core</RootNamespace>
+		<AssemblyName>R5.MongoRepository.Core</AssemblyName>
+		<RootNamespace>R5.MongoRepository.Core</RootNamespace>
 		<LangVersion>latest</LangVersion>
 		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>

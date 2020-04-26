@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MongoRepository.Core
+namespace R5.MongoRepository.Core
 {
 	public sealed class MongoTransactionSession
 	{
@@ -28,7 +28,7 @@ namespace MongoRepository.Core
 				return _transactionSession;
 			}
 
-			lock(_sessionLock)
+			lock (_sessionLock)
 			{
 				if (_transactionSession == null)
 				{

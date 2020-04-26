@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MongoRepository.Core
+namespace R5.MongoRepository.Core
 {
 	public interface IMongoSessionDbContext
 	{

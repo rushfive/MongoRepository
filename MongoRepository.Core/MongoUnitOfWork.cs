@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MongoRepository.Core
+namespace R5.MongoRepository.Core
 {
 	public interface IUnitOfWork
 	{
