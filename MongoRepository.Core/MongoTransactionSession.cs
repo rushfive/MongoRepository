@@ -47,11 +47,19 @@ namespace R5.MongoRepository.Core
 
 		internal Task CommitTransaction()
 		{
+			if (!_transactionSession.IsInTransaction)
+			{
+				throw new InvalidOperationException("Can't commit because the session is not in a transaction state.");
+			}
 			return _transactionSession.CommitTransactionAsync();
 		}
 
 		internal Task AbortTransaction()
 		{
+			if (!_transactionSession.IsInTransaction)
+			{
+				throw new InvalidOperationException("Can't abort because the session is not in a transaction state.");
+			}
 			return _transactionSession.AbortTransactionAsync();
 		}
 	}

@@ -13,8 +13,8 @@ namespace R5.MongoRepository.TestProgram
 		public static readonly string ConnectionString = "mongodb://mongo1:9560,mongo2:9561/MongoRepositoryTest?replicaSet=dockerdev";
 
 		private static IMongoDatabase _database;
-		private static IMongoSessionDbContext _sessionDbContext;
-		private static IUnitOfWork _unitOfWork;
+		private static IMongoSessionContext _sessionDbContext;
+		//private static IUnitOfWork _unitOfWork;
 
 		static Program()
 		{
@@ -22,8 +22,8 @@ namespace R5.MongoRepository.TestProgram
 
 			var sessionDb = MongoDatabaseFactory.Create();
 			var transactionSession = new MongoTransactionSession(sessionDb);
-			_sessionDbContext = new MongoSessionDbContext(sessionDb, transactionSession);
-			_unitOfWork = new MongoUnitOfWork(transactionSession);
+			_sessionDbContext = new MongoSessionContext(sessionDb, transactionSession);
+			//_unitOfWork = new MongoUnitOfWork(transactionSession);
 
 			CreateTestCollections();
 		}
@@ -35,7 +35,7 @@ namespace R5.MongoRepository.TestProgram
 
 
 
-			await _unitOfWork.Commit();
+			//await _unitOfWork.Commit();
 
 			Console.WriteLine("Testing completed.");
 			Console.ReadKey();

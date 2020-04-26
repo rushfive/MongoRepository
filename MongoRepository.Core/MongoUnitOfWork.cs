@@ -11,29 +11,4 @@ namespace R5.MongoRepository.Core
 		Task Commit();
 		Task Abort();
 	}
-
-	public sealed class MongoUnitOfWork : IUnitOfWork
-	{
-		internal readonly MongoTransactionSession _transactionSession;
-
-		public MongoUnitOfWork(MongoTransactionSession transactionSession)
-		{
-			_transactionSession = transactionSession;
-		}
-
-		public Task Commit()
-		{
-			return _transactionSession.CommitTransaction();
-		}
-
-		public Task Abort()
-		{
-			return _transactionSession.AbortTransaction();
-		}
-	}
-
-	public interface ISessionIdentityMaps
-	{
-
-	}
 }

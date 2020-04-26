@@ -11,7 +11,8 @@ namespace R5.MongoRepository.Core
 	public sealed class SessionDatabase : IMongoDatabase
 	{
 		private readonly IMongoDatabase _database;
-		private readonly MongoTransactionSession _transactionSession;
+		//private readonly MongoTransactionSession _transactionSession;
+		private readonly Func<IClientSessionHandle> _getSession;
 
 		public IMongoClient Client => throw new NotImplementedException();
 		public DatabaseNamespace DatabaseNamespace => throw new NotImplementedException();
@@ -19,10 +20,12 @@ namespace R5.MongoRepository.Core
 
 		internal SessionDatabase(
 			IMongoDatabase database,
-			MongoTransactionSession transactionSession)
+			//MongoTransactionSession transactionSession,
+			Func<IClientSessionHandle> getSession)
 		{
 			_database = database;
-			_transactionSession = transactionSession;
+			//_transactionSession = transactionSession;
+			_getSession = getSession;
 		}
 
 
@@ -81,11 +84,11 @@ namespace R5.MongoRepository.Core
 		public IMongoCollection<TDocument> GetCollection<TDocument>(string name, MongoCollectionSettings settings = null)
 		{
 			var collection = _database.GetCollection<TDocument>(name, settings);
-			return new SessionCollection<TDocument>(collection, _transactionSession);
+			return new SessionCollection<TDocument>(collection, _getSession);
 		}
 
 		public IAsyncCursor<string> ListCollectionNames(ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
-			=> _database.ListCollectionNames(_transactionSession.GetSession(), options, cancellationToken);
+			=> _database.ListCollectionNames(_getSession(), options, cancellationToken);
 
 		public IAsyncCursor<string> ListCollectionNames(IClientSessionHandle session, ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
 		{
@@ -93,7 +96,7 @@ namespace R5.MongoRepository.Core
 		}
 
 		public Task<IAsyncCursor<string>> ListCollectionNamesAsync(ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
-			=> _database.ListCollectionNamesAsync(_transactionSession.GetSession(), options, cancellationToken);
+			=> _database.ListCollectionNamesAsync(_getSession(), options, cancellationToken);
 
 		public Task<IAsyncCursor<string>> ListCollectionNamesAsync(IClientSessionHandle session, ListCollectionNamesOptions options = null, CancellationToken cancellationToken = default)
 		{
