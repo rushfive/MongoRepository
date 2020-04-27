@@ -3,8 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using LanguageExt;
-using static LanguageExt.Prelude;
+//using LanguageExt;
 using MongoDB.Driver;
 using System.Threading;
 using Ardalis.GuardClauses;
@@ -29,11 +28,11 @@ namespace R5.MongoRepository
 			_mapper = mapper;
 		}
 
-		public virtual async Task<Option<TAggregate>> FindOrNone(TId id)
+		public virtual async Task<TAggregate> FindOrDefault(TId id)
 		{
 			if (_identityMap.TryGet(id, out TAggregate aggregate))
 			{
-				return Some(aggregate);
+				return aggregate;
 			}
 
 			await _identityMapLock.WaitAsync();
@@ -49,7 +48,7 @@ namespace R5.MongoRepository
 
 					if (document == null)
 					{
-						return None;
+						return null;
 					}
 
 					_identityMap.Set(_mapper.ToAggregate(document));

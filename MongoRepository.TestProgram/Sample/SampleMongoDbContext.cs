@@ -10,43 +10,24 @@ using System.Threading.Tasks;
 
 namespace R5.MongoRepository.TestProgram.Sample
 {
-	public interface ISampleMongoDbContext : IUnitOfWork
-	{
-		IRepository<Patient, Guid> Patients { get; }
-		IRepository<Appointment, Guid> Appointments { get; }
-	}
-
-	public sealed class SampleMongoDbContext : ISampleMongoDbContext
+	public sealed class SampleMongoDbContext : MongoSessionDbContext
 	{
 		public IRepository<Patient, Guid> Patients { get; }
 		public IRepository<Appointment, Guid> Appointments { get; }
-		private readonly MongoSessionContext _sessionContext;
-
+		//private readonly MongoSessionContext _sessionContext;
 
 		public SampleMongoDbContext(IMongoDatabase database)
+			: base(database)
 		{
-			_sessionContext = new MongoSessionContext(database);
+			//_sessionContext = new MongoSessionContext(database);
 			Patients = new PatientRepository(_sessionContext, new PatientAggregateMapper());
 			Appointments = new AppointmentRepository(_sessionContext, new AppointmentAggregateMapper());
 		}
 
-		public async Task Commit()
-		{
-			var operationStores = new List<IAggregateOperationStore>
-			{
-				Patients, Appointments
-			};
-
-			List<ICommitAggregateOperation> operations = operationStores.SelectMany(s => s.GetCommitOperations()).ToList();
-
-			foreach(var operation in operations)
-			{
-				await operation.Execute(_sessionContext);
-			}
-
-			await _sessionContext.CommitTransaction();
-		}
-
-		public Task Abort() => _sessionContext.AbortTransaction();
+		protected override List<IAggregateOperationStore> GetOperationStores()
+			=> new List<IAggregateOperationStore>
+				{
+					Patients, Appointments
+				};
 	}
 }

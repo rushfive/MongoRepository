@@ -5,14 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using LanguageExt;
 using MongoDB.Driver;
-using R5.MongoRepository.Core;
 
-namespace R5.MongoRepository
+namespace R5.MongoRepository.Core
 {
 	public interface IRepository<TAggregate, TId> : IAggregateOperationStore
 		where TAggregate : IAggregateRoot<TId>
 	{
-		Task<Option<TAggregate>> FindOrNone(TId id);
+		Task<TAggregate> FindOrDefault(TId id);
 		void Add(TAggregate aggregate);
 		void Delete(TAggregate aggregate);
 	}
@@ -68,7 +67,7 @@ namespace R5.MongoRepository
 
 		public TAggregate Get(TId id)
 		{
-			if (_entries.TryGetValue(id, out Entry entry) 
+			if (_entries.TryGetValue(id, out Entry entry)
 				&& entry.State != EntryState.Deleted)
 			{
 				return entry.Aggregate;
@@ -146,14 +145,14 @@ namespace R5.MongoRepository
 		Deleted
 	}
 
-	internal sealed class AggregateSaveOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	public sealed class AggregateSaveOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : IAggregateRoot<TId>
 		where TDocument : IAggregateDocument<TId>
 	{
 		private readonly TAggregate _aggregate;
 		private readonly Func<TAggregate, TDocument> _toDocument;
 
-		internal AggregateSaveOperation(
+		public AggregateSaveOperation(
 			TAggregate aggregate,
 			Func<TAggregate, TDocument> toDocument)
 		{
@@ -167,8 +166,8 @@ namespace R5.MongoRepository
 
 			return sessionContext.GetCollection<TDocument>()
 				.ReplaceOneAsync(
-					Builders<TDocument>.Filter.Eq(d => d.Id, _aggregate.Id), 
-					document, 
+					Builders<TDocument>.Filter.Eq(d => d.Id, _aggregate.Id),
+					document,
 					new UpdateOptions { IsUpsert = true });
 		}
 	}
@@ -179,7 +178,7 @@ namespace R5.MongoRepository
 	{
 		private readonly TAggregate _aggregate;
 
-		internal AggregateDeleteOperation(TAggregate aggregate)
+		public AggregateDeleteOperation(TAggregate aggregate)
 		{
 			_aggregate = aggregate;
 		}

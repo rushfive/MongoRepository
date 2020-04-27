@@ -16,12 +16,33 @@ namespace R5.MongoRepository.TestProgram.Sample.Patients
 	{
 		public Patient ToAggregate(PatientDocument document)
 		{
-			throw new NotImplementedException();
+			return new Patient
+			{
+				Id = document.Id,
+				FullName = $"{document.FirstName} {document.LastName}".Trim()
+			};
 		}
 
 		public PatientDocument ToDocument(Patient aggregate)
 		{
-			throw new NotImplementedException();
+			string firstName = "", lastName = "";
+
+			if (!string.IsNullOrWhiteSpace(aggregate.FullName))
+			{
+				var nameSplit = aggregate.FullName.Split(' ');
+				if (nameSplit.Length > 0)
+					firstName = nameSplit[0];
+				if (nameSplit.Length > 1)
+					lastName = nameSplit[1];
+			}
+
+			return new PatientDocument
+			{
+				Id = aggregate.Id,
+				FirstName = firstName,
+				LastName = lastName
+			};
+			
 		}
 	}
 }
