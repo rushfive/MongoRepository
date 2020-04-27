@@ -17,11 +17,18 @@ namespace R5.MongoRepository.TestProgram.Sample
 		//private readonly MongoSessionContext _sessionContext;
 
 		public SampleMongoDbContext(IMongoDatabase database)
-			: base(database)
+			: base(database, null)
 		{
 			//_sessionContext = new MongoSessionContext(database);
 			Patients = new PatientRepository(_sessionContext, new PatientAggregateMapper());
 			Appointments = new AppointmentRepository(_sessionContext, new AppointmentAggregateMapper());
+
+			_onCommitCallback = () =>
+			{
+				Console.WriteLine("Commited WHOO!");
+				Patients.OnCommitCompleted();
+				Appointments.OnCommitCompleted();
+			};
 		}
 
 		protected override List<IAggregateOperationStore> GetOperationStores()

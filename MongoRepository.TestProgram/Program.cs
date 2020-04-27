@@ -40,7 +40,7 @@ namespace R5.MongoRepository.TestProgram
 			Patient isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
 			if (isaiah != null)
 			{
-				isaiah.FullName += "hehehehe";
+				isaiah.FullName += "hehehehe22222";
 			}
 
 
@@ -48,7 +48,7 @@ namespace R5.MongoRepository.TestProgram
 			var newPatient1 = new Patient
 			{
 				Id = Guid.NewGuid(),
-				FullName = "Kelly Lee"
+				FullName = "Myla Lee"
 			};
 
 			_dbContext.Patients.Add(newPatient1);
@@ -63,8 +63,13 @@ namespace R5.MongoRepository.TestProgram
 
 			await _dbContext.Commit();
 
+			_dbContext.Patients.Add(new Patient
+			{
+				Id = Guid.NewGuid(),
+				FullName = "PostFirstCommit PatientAdd"
+			});
 
-			
+			await _dbContext.Commit();
 
 
 

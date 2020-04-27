@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace R5.MongoRepository.Core
 {
-	public sealed class MongoTransactionSession
+	public sealed class MongoTransactionSession : IDisposable
 	{
 		private readonly IMongoDatabase _database;
 		private IClientSessionHandle _transactionSession;
 		private static object _sessionLock = new object();
+		private bool _disposed;
 
 		internal static readonly TransactionOptions _transactionOptions
 			= new TransactionOptions(
@@ -26,14 +27,14 @@ namespace R5.MongoRepository.Core
 
 		internal IClientSessionHandle GetSession()
 		{
-			if (_transactionSession != null)
+			if (IsInRunningState())
 			{
 				return _transactionSession;
 			}
 
 			lock (_sessionLock)
 			{
-				if (_transactionSession == null)
+				if (!IsInRunningState())
 				{
 					var session = _database.Client.StartSession();
 					session.StartTransaction(_transactionOptions);
@@ -45,22 +46,52 @@ namespace R5.MongoRepository.Core
 			return _transactionSession;
 		}
 
-		internal Task CommitTransaction()
+		internal bool IsInRunningState()
 		{
-			if (!_transactionSession.IsInTransaction)
-			{
-				throw new InvalidOperationException("Can't commit because the session is not in a transaction state.");
-			}
-			return _transactionSession.CommitTransactionAsync();
+			return _transactionSession != null && _transactionSession.IsInTransaction;
 		}
 
-		internal Task AbortTransaction()
+		internal Task CommitTransactionAsync()
 		{
-			if (!_transactionSession.IsInTransaction)
+			if (IsInRunningState())
 			{
-				throw new InvalidOperationException("Can't abort because the session is not in a transaction state.");
+				return _transactionSession.CommitTransactionAsync();
 			}
-			return _transactionSession.AbortTransactionAsync();
+			return Task.CompletedTask;
+		}
+
+		internal void CommitTransaction()
+		{
+			if (IsInRunningState())
+			{
+				_transactionSession.CommitTransaction();
+			}
+		}
+
+		internal Task AbortTransactionAsync()
+		{
+			if (IsInRunningState())
+			{
+				return _transactionSession.AbortTransactionAsync();
+			}
+			return Task.CompletedTask;
+		}
+
+		internal void AbortTransaction()
+		{
+			if (IsInRunningState())
+			{
+				_transactionSession.AbortTransaction();
+			}
+		}
+
+		public void Dispose()
+		{
+			if (!_disposed)
+			{
+				_transactionSession?.Dispose();
+				_disposed = true;
+			}
 		}
 	}
 }
