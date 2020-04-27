@@ -42,6 +42,12 @@ namespace R5.MongoRepository.Core
 				}
 
 				List<ICommitAggregateOperation> operations = GetOperationStores().SelectMany(s => s.GetCommitOperations()).ToList();
+				if (!operations.Any())
+				{
+					await _sessionContext.TransactionSession.AbortTransactionAsync();
+					return new CommitTransactionResult.AbortedBecauseNoOperations();
+				}
+
 
 				foreach (var operation in operations)
 				{
@@ -82,40 +88,45 @@ namespace R5.MongoRepository.Core
 			}
 		}
 
-		private void TryExecuteSyncCommit()
-		{
-			if (_sessionContext.TransactionSession.IsInRunningState())
-			{
-				try
-				{
-					List<ICommitAggregateOperation> operations = GetOperationStores().SelectMany(s => s.GetCommitOperations()).ToList();
-					foreach (var operation in operations)
-					{
-						operation.Execute(_sessionContext);
-					}
+		//private void TryExecuteSyncCommit()
+		//{
+		//	if (_sessionContext.TransactionSession.IsInRunningState())
+		//	{
+		//		try
+		//		{
+		//			List<ICommitAggregateOperation> operations = GetOperationStores().SelectMany(s => s.GetCommitOperations()).ToList();
+		//			foreach (var operation in operations)
+		//			{
+		//				operation.Execute(_sessionContext);
+		//			}
 
-					_sessionContext.TransactionSession.CommitTransaction();
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine("Failed to commit transaction synchronously while MongoSessionDbContext was being disposed:"
-						+ Environment.NewLine + ex);
+		//			_sessionContext.TransactionSession.CommitTransaction();
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			Console.WriteLine("Failed to commit transaction synchronously while MongoSessionDbContext was being disposed:"
+		//				+ Environment.NewLine + ex);
 
-					_sessionContext.TransactionSession.AbortTransaction();
-					throw;
-				}
-			}
-		}
+		//			_sessionContext.TransactionSession.AbortTransaction();
+		//			throw;
+		//		}
+		//	}
+		//}
 	}
 
 	public abstract class CommitTransactionResult
 	{
+		public sealed class NoTransactionInProgress : CommitTransactionResult
+		{
+
+		}
+
 		public sealed class Completed : CommitTransactionResult
 		{
 
 		}
 
-		public sealed class NoTransactionInProgress : CommitTransactionResult
+		public sealed class AbortedBecauseNoOperations : CommitTransactionResult
 		{
 
 		}

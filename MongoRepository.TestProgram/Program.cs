@@ -35,9 +35,22 @@ namespace R5.MongoRepository.TestProgram
 
 		static async Task Main(string[] args)
 		{
+
 			var isaiahId = Guid.Parse("65a82960-4849-4a37-9c75-811021739869");
 
 			Patient isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
+
+			_dbContext.Patients.Delete(isaiah);
+
+			await _dbContext.Commit();
+
+			isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
+			isaiah.FullName += "what";
+
+
+
+			var test = "TEST";
+
 			if (isaiah != null)
 			{
 				isaiah.FullName += "hehehehe22222";

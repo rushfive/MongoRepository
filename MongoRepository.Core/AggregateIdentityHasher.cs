@@ -11,8 +11,8 @@ namespace R5.MongoRepository.Core
 		private static readonly Dictionary<Type, AggregateIdentityHasher> _hashersByType
 			= new Dictionary<Type, AggregateIdentityHasher>();
 
-		internal static AggregateIdentityHasher GetFor<TAggregate>()
-			=> GetFor(typeof(TAggregate));
+		//internal static AggregateIdentityHasher GetFor<TAggregate>()
+		//	=> GetFor(typeof(TAggregate));
 
 		internal static AggregateIdentityHasher GetFor(object aggregate)
 		{

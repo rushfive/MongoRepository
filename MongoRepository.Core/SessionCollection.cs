@@ -135,9 +135,7 @@ namespace R5.MongoRepository.Core
 		}
 
 		public Task<DeleteResult> DeleteOneAsync(FilterDefinition<TDocument> filter, CancellationToken cancellationToken = default)
-		{
-			throw new NotImplementedException();
-		}
+			=> _collection.DeleteOneAsync(filter, null, cancellationToken);
 
 		public Task<DeleteResult> DeleteOneAsync(FilterDefinition<TDocument> filter, DeleteOptions options, CancellationToken cancellationToken = default)
 			=> _collection.DeleteOneAsync(_getSession(), filter, options, cancellationToken);

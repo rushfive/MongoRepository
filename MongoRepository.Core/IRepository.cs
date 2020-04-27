@@ -94,7 +94,7 @@ namespace R5.MongoRepository.Core
 		{
 			_entries.Add(aggregate.Id, Entry.LoadedFromDatabase(aggregate));
 
-			AggregateIdentityHasher hasher = AggregateIdentityHasherCache.GetFor<TAggregate>();
+			AggregateIdentityHasher hasher = AggregateIdentityHasherCache.GetFor(aggregate);
 			_loadedEntryHashes[aggregate.Id] = hasher.ComputeFor(aggregate);
 		}
 
@@ -118,7 +118,7 @@ namespace R5.MongoRepository.Core
 			switch (entry.State)
 			{
 				case EntryState.Loaded:
-					AggregateIdentityHasher hasher = AggregateIdentityHasherCache.GetFor<TAggregate>();
+					AggregateIdentityHasher hasher = AggregateIdentityHasherCache.GetFor(entry.Aggregate);
 					int currentHash = hasher.ComputeFor(entry.Aggregate);
 					int hashOnLoad = _loadedEntryHashes[entry.Aggregate.Id];
 					return currentHash != hashOnLoad;
