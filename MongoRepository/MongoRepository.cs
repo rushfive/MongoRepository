@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using System.Threading;
 using Ardalis.GuardClauses;
 using System.Linq;
+using MongoDB.Bson;
 
 namespace R5.MongoRepository
 {
@@ -45,6 +46,10 @@ namespace R5.MongoRepository
 					TDocument document = await collection
 						.Find(Builders<TDocument>.Filter.Eq(d => d.Id, id))
 						.SingleOrDefaultAsync();
+
+					//var document = await collection.FindOneAndUpdateAsync(
+					//	Builders<TDocument>.Filter.Eq(d => d.Id, id),
+					//	Builders<TDocument>.Update.Set(d => d.SessionLock, Guid.NewGuid().ToString()));
 
 					if (document == null)
 					{
@@ -96,7 +101,7 @@ namespace R5.MongoRepository
 				.ToList();
 		}
 
-		public void OnCommitCompleted()
+		public void OnTransactionCommitOrAborted()
 		{
 			_identityMap.Reset();
 		}

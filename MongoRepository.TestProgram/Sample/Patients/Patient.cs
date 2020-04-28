@@ -21,6 +21,8 @@ namespace R5.MongoRepository.TestProgram.Sample.Patients
 		public Guid Id { get; set; }
 		public string FirstName { get; set; }
 		public string LastName { get; set; }
+
+		public string SessionLock { get; set; }
 	}
 
 	

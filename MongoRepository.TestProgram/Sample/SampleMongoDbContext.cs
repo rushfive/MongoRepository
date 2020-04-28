@@ -23,12 +23,15 @@ namespace R5.MongoRepository.TestProgram.Sample
 			Patients = new PatientRepository(_sessionContext, new PatientAggregateMapper());
 			Appointments = new AppointmentRepository(_sessionContext, new AppointmentAggregateMapper());
 
-			_onCommitCallback = () =>
+			Action onTransactionEnd = () =>
 			{
 				Console.WriteLine("Commited WHOO!");
-				Patients.OnCommitCompleted();
-				Appointments.OnCommitCompleted();
+				Patients.OnTransactionCommitOrAborted();
+				Appointments.OnTransactionCommitOrAborted();
 			};
+
+			_onCommitCallback = onTransactionEnd;
+			_onAbortCallback = onTransactionEnd;
 		}
 
 		protected override List<IAggregateOperationStore> GetOperationStores()

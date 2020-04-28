@@ -18,5 +18,7 @@ namespace R5.MongoRepository.TestProgram.Sample.Appointments
 		[BsonId]
 		[BsonRepresentation(BsonType.String)]
 		public Guid Id { get; set; }
+
+		public string SessionLock { get; set; }
 	}
 }

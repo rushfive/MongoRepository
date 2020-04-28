@@ -33,9 +33,43 @@ namespace R5.MongoRepository.TestProgram
 
 		}
 
+		// validated tests:
+		/*
+			- find a patient (now in session), then update that patient in robo.
+				on trying to commiot, get write exception
+		 */ 
+
 		static async Task Main(string[] args)
 		{
+			await Test2();
+			
 
+			Console.WriteLine("Testing completed.");
+			Console.ReadKey();
+		}
+
+		static async Task Test2()
+		{
+			int attempt = 0;
+			CommitTransactionResult commitResult = null;
+			do
+			{
+				WriteLine($"Attempt #{++attempt}");
+
+				var patientId = Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471");
+				Patient patient = await _dbContext.Patients.FindOrDefault(patientId);
+
+				patient.FullName += "_updatedfromprogram";
+				commitResult = await _dbContext.Commit();
+			}
+			while (commitResult is CommitTransactionResult.FailedWithError);
+
+			WriteLine($"Commited after {attempt} attempts!");
+
+		}
+
+		static async Task Test1()
+		{
 			var isaiahId = Guid.Parse("65a82960-4849-4a37-9c75-811021739869");
 
 			Patient isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
@@ -83,20 +117,7 @@ namespace R5.MongoRepository.TestProgram
 			});
 
 			await _dbContext.Commit();
-
-
-
-			//IMongoCollection<BsonDocument> sessionCollection1 = _sessionDbContext.GetCollection<BsonDocument>("TestCollection1");
-			//await sessionCollection1.InsertOneAsync(new { SessionCollection = "hi" }.ToBsonDocument());
-
-
-
-			//await _unitOfWork.Commit();
-
-			Console.WriteLine("Testing completed.");
-			Console.ReadKey();
 		}
-
 
 		static void CreateTestCollections()
 		{

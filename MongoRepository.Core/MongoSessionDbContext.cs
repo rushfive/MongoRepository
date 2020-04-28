@@ -13,6 +13,7 @@ namespace R5.MongoRepository.Core
 		protected readonly IMongoDatabase _database;
 		protected readonly MongoSessionDbContextOptions _options;
 		protected Action _onCommitCallback;
+		protected Action _onAbortCallback;
 		private bool _disposed;
 
 		//protected MongoSessionDbContext(IMongoDatabase database)
@@ -61,14 +62,20 @@ namespace R5.MongoRepository.Core
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Failed to commit transaction synchronously while MongoSessionDbContext was being disposed:"
+				Console.WriteLine("Aborting Transaction:"
 						+ Environment.NewLine + ex);
+
+				await Abort();
 
 				return new CommitTransactionResult.FailedWithError(ex);
 			}
 		}
 
-		public Task Abort() => _sessionContext.TransactionSession.AbortTransactionAsync();
+		public async Task Abort()
+		{
+			await _sessionContext.TransactionSession.AbortTransactionAsync();
+			_onAbortCallback?.Invoke();
+		}
 
 		protected abstract List<IAggregateOperationStore> GetOperationStores();
 

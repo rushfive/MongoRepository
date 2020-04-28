@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using LanguageExt;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace R5.MongoRepository.Core
@@ -20,7 +21,7 @@ namespace R5.MongoRepository.Core
 
 	public interface ISessionIdentityCache
 	{
-		void OnCommitCompleted();
+		void OnTransactionCommitOrAborted();
 	}
 
 	public interface ICommitAggregateOperation
@@ -37,6 +38,7 @@ namespace R5.MongoRepository.Core
 	public interface IAggregateDocument<TId>
 	{
 		TId Id { get; }
+		string SessionLock { get; }
 	}
 
 	public interface IAggregateMapper<TAggregate, TDocument, TId>
