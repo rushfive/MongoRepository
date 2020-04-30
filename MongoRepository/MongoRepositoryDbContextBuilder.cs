@@ -13,12 +13,12 @@ namespace R5.MongoRepository
 	public abstract class MongoRepositoryDbContextBuilder
 	{
 		public static MongoRepositoryDbContextBuilder<TDbContext> For<TDbContext>(IMongoDatabase database)
-			where TDbContext : MongoRepositoryDbContext, new()
+			where TDbContext : MongoRepositoryDbContext
 				=> new MongoRepositoryDbContextBuilder<TDbContext>(database);
 	}
 
 	public class MongoRepositoryDbContextBuilder<TDbContext>
-		where TDbContext : MongoRepositoryDbContext, new()
+		where TDbContext : MongoRepositoryDbContext
 	{
 		private readonly IMongoDatabase _database;
 
@@ -36,7 +36,8 @@ namespace R5.MongoRepository
 		public MongoRepositoryDbContextBuilder<TDbContext>  RegisterRepositoryFor<TAggregate, TDocument, TId>(
 			Func<TAggregate, TId> aggregateIdSelector,
 			Expression<Func<TDocument, TId>> documentIdSelector,
-			Action<IMappingExpression<TAggregate, TDocument>> configureMapping = null)
+			Action<IMappingExpression<TAggregate, TDocument>> configureToDocumentMapping,
+			Action<IMappingExpression<TDocument, TAggregate>> configureToAggregateMapping)
 			where TAggregate : class
 			where TDocument : class
 		{
@@ -48,23 +49,35 @@ namespace R5.MongoRepository
 				throw new InvalidOperationException($"Failed to resolve collection name for '{documentType.FullName}': the class is missing a '{nameof(MongoCollectionAttribute)}'");
 			}
 
-			return RegisterRepositoryFor(collectionAttribute.Name, aggregateIdSelector, documentIdSelector, configureMapping);
+			return RegisterRepositoryFor(collectionAttribute.Name, aggregateIdSelector, documentIdSelector, configureToDocumentMapping, configureToAggregateMapping);
 		}
 
 		public MongoRepositoryDbContextBuilder<TDbContext> RegisterRepositoryFor<TAggregate, TDocument, TId>(
 			string collectionName,
 			Func<TAggregate, TId> aggregateIdSelector,
 			Expression<Func<TDocument, TId>> documentIdSelector,
-			Action<IMappingExpression<TAggregate, TDocument>> configureMapping = null)
+			Action<IMappingExpression<TAggregate, TDocument>> configureToDocumentMapping,
+			Action<IMappingExpression<TDocument, TAggregate>> configureToAggregateMapping)
 			where TAggregate : class
 			where TDocument : class
 		{
-			if (configureMapping != null)
+			if (configureToDocumentMapping != null)
 			{
 				Action<IMapperConfigurationExpression> configureRepositoryMapper = config =>
 				{
 					IMappingExpression<TAggregate, TDocument> mappingConfig = config.CreateMap<TAggregate, TDocument>();
-					configureMapping(mappingConfig);
+					configureToDocumentMapping(mappingConfig);
+				};
+
+				_mapperConfigurations.Add(configureRepositoryMapper);
+			}
+
+			if (configureToAggregateMapping != null)
+			{
+				Action<IMapperConfigurationExpression> configureRepositoryMapper = config =>
+				{
+					IMappingExpression<TDocument, TAggregate> mappingConfig = config.CreateMap<TDocument, TAggregate>();
+					configureToAggregateMapping(mappingConfig);
 				};
 
 				_mapperConfigurations.Add(configureRepositoryMapper);

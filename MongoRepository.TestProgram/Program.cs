@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using R5.MongoRepository.Core;
 using R5.MongoRepository.TestProgram.Sample;
+using R5.MongoRepository.TestProgram.Sample.Appointments;
 using R5.MongoRepository.TestProgram.Sample.Patients;
 using System;
 using System.Collections.Generic;
@@ -41,16 +42,57 @@ namespace R5.MongoRepository.TestProgram
 
 		static async Task Main(string[] args)
 		{
+			IMongoDatabase database = MongoDatabaseFactory.Create();
+
+			var builder = MongoRepositoryDbContextBuilder.For<SampleMongoDbContext>(database);
+
+			builder.RegisterRepositoryFor<Patient, PatientDocument, Guid>(
+				aggregate => aggregate.Id,
+				document => document.Id,
+				config =>
+				{
+					config
+						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id))
+						.ForMember(d => d.FirstName, c => c.MapFrom(a => a.FullName.Split(' ', StringSplitOptions.None)[0]))
+						.ForMember(d => d.LastName, c => c.MapFrom(a => a.FullName.Split(' ', StringSplitOptions.None)[1]));
+				},
+				config =>
+				{
+					config
+						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id))
+						.ForMember(d => d.FullName, c => c.MapFrom(a => $"{a.FirstName} {a.LastName}".Trim()));
+				});
+
+			builder.RegisterRepositoryFor<Appointment, AppointmentDocument, Guid>(
+				aggregate => aggregate.Id,
+				document => document.Id,
+				config =>
+				{
+					config
+						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id));
+				},
+				config =>
+				{
+					config
+						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id));
+				});
+
+			SampleMongoDbContext dbContext = builder.Create();
 
 
+			var built = "YAY";
+
+			var kId = Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471");
+
+			var kPatient1 = await dbContext.Patients.FindOne(kId);
+			var kPatient2 = await dbContext.Patients.FindOneWhere(p => p.Id == kId);
 
 
-
-
+			//var patients = await dbContext.Patients.Query(p => p);
 
 
 			//await Test2();
-			
+
 
 			Console.WriteLine("Testing completed.");
 			Console.ReadKey();

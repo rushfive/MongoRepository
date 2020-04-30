@@ -10,7 +10,8 @@ namespace R5.MongoRepository.Core
 		where TAggregate : class
 	{
 		Task<TAggregate> FindOne(TId id);
-		Task<TAggregate> FindOneWhere(Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query);
+		Task<TAggregate> FindOneWhere(Expression<Func<TAggregate, bool>> predicate);
+		//Task<TAggregate> FindOneWhere(Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query);
 		Task<IReadOnlyCollection<TAggregate>> Query(Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query);
 		void Add(TAggregate aggregate);
 		void Delete(TAggregate aggregate);
