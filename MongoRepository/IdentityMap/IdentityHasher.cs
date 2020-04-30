@@ -4,30 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace R5.MongoRepository.Core
+namespace R5.MongoRepository.IdentityMap
 {
-	internal static class AggregateIdentityHasherCache
-	{
-		private static readonly Dictionary<Type, AggregateIdentityHasher> _hashersByType
-			= new Dictionary<Type, AggregateIdentityHasher>();
-
-		//internal static AggregateIdentityHasher GetFor<TAggregate>()
-		//	=> GetFor(typeof(TAggregate));
-
-		internal static AggregateIdentityHasher GetFor(object aggregate)
-		{
-			var type = aggregate.GetType();
-
-			if (_hashersByType.TryGetValue(type, out AggregateIdentityHasher hasher))
-			{
-				return hasher;
-			}
-
-			_hashersByType[type] = AggregateIdentityHasher.ResolveFor(aggregate);
-			return _hashersByType[type];
-		}
-	}
-
 	internal sealed class AggregateIdentityHasher
 	{
 		private readonly List<PropertyInfo> _properties;
@@ -41,7 +19,7 @@ namespace R5.MongoRepository.Core
 			_fields = fields;
 		}
 
-		public int ComputeFor(object aggregate)
+		internal int ComputeFor(object aggregate)
 		{
 			unchecked   //allow overflow
 			{
@@ -72,12 +50,10 @@ namespace R5.MongoRepository.Core
 		{
 			var properties = aggregate.GetType()
 				.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-				//.Where(p => p.GetCustomAttribute(typeof(IgnoreMemberAttribute)) == null)
 				.ToList();
 
 			var fields = aggregate.GetType()
 				.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-				//.Where(p => p.GetCustomAttribute(typeof(IgnoreMemberAttribute)) == null)
 				.ToList();
 
 			return new AggregateIdentityHasher(properties, fields);

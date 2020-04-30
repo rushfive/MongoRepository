@@ -7,14 +7,14 @@ using System.Text;
 
 namespace R5.MongoRepository.TestProgram.Sample.Patients
 {
-	public sealed class Patient : IAggregateRoot<Guid>
+	public sealed class Patient// : IAggregateRoot<Guid>
 	{
 		public Guid Id { get; set; }
 		public string FullName { get; set; }
 	}
 
 	[MongoCollection("Patients")]
-	public sealed class PatientDocument : IAggregateDocument<Guid>
+	public sealed class PatientDocument// : IAggregateDocument<Guid>
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.String)]

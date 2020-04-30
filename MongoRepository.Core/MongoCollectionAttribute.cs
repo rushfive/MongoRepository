@@ -1,19 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.Text;
 
-namespace R5.MongoRepository.Core
-{
-	public sealed class MongoCollectionAttribute : Attribute
-	{
-		public readonly string Name;
+//namespace R5.MongoRepository.Core
+//{
+//	public sealed class MongoCollectionAttribute : Attribute
+//	{
+//		public readonly string Name;
 
-		public MongoCollectionAttribute(string name)
-		{
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentNullException(nameof(name));
+//		public MongoCollectionAttribute(string name)
+//		{
+//			if (string.IsNullOrWhiteSpace(name))
+//				throw new ArgumentNullException(nameof(name));
 
-			Name = name;
-		}
-	}
-}
+//			Name = name;
+//		}
+//	}
+//}

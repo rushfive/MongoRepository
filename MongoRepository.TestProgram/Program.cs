@@ -23,7 +23,7 @@ namespace R5.MongoRepository.TestProgram
 		{
 			
 			_database = MongoDatabaseFactory.Create();
-			_dbContext = new SampleMongoDbContext(_database);
+			//_dbContext = new SampleMongoDbContext(_database);
 			CreateTestCollections();
 			//var sessionDb = MongoDatabaseFactory.Create();
 			//var transactionSession = new MongoTransactionSession(sessionDb);
@@ -41,7 +41,15 @@ namespace R5.MongoRepository.TestProgram
 
 		static async Task Main(string[] args)
 		{
-			await Test2();
+
+
+
+
+
+
+
+
+			//await Test2();
 			
 
 			Console.WriteLine("Testing completed.");
@@ -50,21 +58,21 @@ namespace R5.MongoRepository.TestProgram
 
 		static async Task Test2()
 		{
-			int attempt = 0;
-			CommitTransactionResult commitResult = null;
-			do
-			{
-				WriteLine($"Attempt #{++attempt}");
+			//int attempt = 0;
+			//CommitTransactionResult commitResult = null;
+			//do
+			//{
+			//	WriteLine($"Attempt #{++attempt}");
 
-				var patientId = Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471");
-				Patient patient = await _dbContext.Patients.FindOrDefault(patientId);
+			//	var patientId = Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471");
+			//	Patient patient = await _dbContext.Patients.FindOne(patientId);
 
-				patient.FullName += "_updatedfromprogram";
-				commitResult = await _dbContext.Commit();
-			}
-			while (commitResult is CommitTransactionResult.FailedWithError);
+			//	patient.FullName += "_updatedfromprogram";
+			//	commitResult = await _dbContext.Commit();
+			//}
+			//while (commitResult is CommitTransactionResult.FailedWithError);
 
-			WriteLine($"Commited after {attempt} attempts!");
+			//WriteLine($"Commited after {attempt} attempts!");
 
 		}
 
@@ -72,13 +80,13 @@ namespace R5.MongoRepository.TestProgram
 		{
 			var isaiahId = Guid.Parse("65a82960-4849-4a37-9c75-811021739869");
 
-			Patient isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
+			Patient isaiah = await _dbContext.Patients.FindOne(isaiahId);
 
 			_dbContext.Patients.Delete(isaiah);
 
 			await _dbContext.Commit();
 
-			isaiah = await _dbContext.Patients.FindOrDefault(isaiahId);
+			isaiah = await _dbContext.Patients.FindOne(isaiahId);
 			isaiah.FullName += "what";
 
 
@@ -102,7 +110,7 @@ namespace R5.MongoRepository.TestProgram
 
 
 
-			var getIsaiahAgain = await _dbContext.Patients.FindOrDefault(isaiahId);
+			var getIsaiahAgain = await _dbContext.Patients.FindOne(isaiahId);
 
 			bool refEquals = ReferenceEquals(isaiah, getIsaiahAgain);
 

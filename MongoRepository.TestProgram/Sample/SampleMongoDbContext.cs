@@ -10,34 +10,50 @@ using System.Threading.Tasks;
 
 namespace R5.MongoRepository.TestProgram.Sample
 {
-	public sealed class SampleMongoDbContext : MongoSessionDbContext
+	public sealed class SampleMongoDbContext : MongoRepositoryDbContext
 	{
-		public IRepository<Patient, Guid> Patients { get; }
-		public IRepository<Appointment, Guid> Appointments { get; }
-		//private readonly MongoSessionContext _sessionContext;
-
-		public SampleMongoDbContext(IMongoDatabase database)
-			: base(database, null)
+		public SampleMongoDbContext(
+			Dictionary<Type, MongoRepository> repositories) 
+			: base(repositories)
 		{
-			//_sessionContext = new MongoSessionContext(database);
-			Patients = new PatientRepository(_sessionContext, new PatientAggregateMapper());
-			Appointments = new AppointmentRepository(_sessionContext, new AppointmentAggregateMapper());
-
-			Action onTransactionEnd = () =>
-			{
-				Console.WriteLine("Commited WHOO!");
-				Patients.OnTransactionCommitOrAborted();
-				Appointments.OnTransactionCommitOrAborted();
-			};
-
-			_onCommitCallback = onTransactionEnd;
-			_onAbortCallback = onTransactionEnd;
 		}
 
-		protected override List<IAggregateOperationStore> GetOperationStores()
-			=> new List<IAggregateOperationStore>
-				{
-					Patients, Appointments
-				};
+		public IMongoRepository<Patient, Guid> Patients => GetRepository<Patient, PatientDocument, Guid>();
+		public IMongoRepository<Appointment, Guid> Appointments => GetRepository<Appointment, AppointmentDocument, Guid>();
 	}
+
+
+
+
+
+	//public sealed class SampleMongoDbContext : MongoSessionDbContext
+	//{
+	//	public IRepository<Patient, Guid> Patients { get; }
+	//	public IRepository<Appointment, Guid> Appointments { get; }
+	//	//private readonly MongoSessionContext _sessionContext;
+
+	//	public SampleMongoDbContext(IMongoDatabase database)
+	//		: base(database, null)
+	//	{
+	//		//_sessionContext = new MongoSessionContext(database);
+	//		Patients = new PatientRepository(_sessionContext, new PatientAggregateMapper());
+	//		Appointments = new AppointmentRepository(_sessionContext, new AppointmentAggregateMapper());
+
+	//		Action onTransactionEnd = () =>
+	//		{
+	//			Console.WriteLine("Commited WHOO!");
+	//			Patients.OnTransactionCommitOrAborted();
+	//			Appointments.OnTransactionCommitOrAborted();
+	//		};
+
+	//		_onCommitCallback = onTransactionEnd;
+	//		_onAbortCallback = onTransactionEnd;
+	//	}
+
+	//	protected override List<IAggregateOperationStore> GetOperationStores()
+	//		=> new List<IAggregateOperationStore>
+	//			{
+	//				Patients, Appointments
+	//			};
+	//}
 }

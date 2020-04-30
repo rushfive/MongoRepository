@@ -8,7 +8,7 @@ namespace R5.MongoRepository.Core
 {
 	public interface IUnitOfWork
 	{
-		Task<CommitTransactionResult> Commit();
+		Task Commit();
 		Task Abort();
 	}
 }

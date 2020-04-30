@@ -9,71 +9,121 @@ using System.Threading;
 using Ardalis.GuardClauses;
 using System.Linq;
 using MongoDB.Bson;
+using R5.MongoRepository.IdentityMap;
+using R5.MongoRepository.UpdateOperations;
+using System.Linq.Expressions;
+using MongoDB.Driver.Linq;
+using AutoMapper;
 
 namespace R5.MongoRepository
 {
-	public abstract class MongoRepository<TAggregate, TDocument, TId> : IRepository<TAggregate, TId>//, IAggregateOperationStore
-		where TAggregate : class, IAggregateRoot<TId>
-		where TDocument : IAggregateDocument<TId>
+	public abstract class MongoRepository
 	{
-		protected readonly IMongoSessionContext _dbContext;
-		protected readonly IAggregateMapper<TAggregate, TDocument, TId> _mapper;
-		protected readonly AggregateIdentityMap<TAggregate, TId> _identityMap = new AggregateIdentityMap<TAggregate, TId>();
-		private SemaphoreSlim _identityMapLock { get; } = new SemaphoreSlim(1);
+		internal MongoRepository() { }
+	}
 
-		protected MongoRepository(
-			IMongoSessionContext dbContext,
-			IAggregateMapper<TAggregate, TDocument, TId> mapper)
+	public sealed class MongoRepository<TAggregate, TDocument, TId> : MongoRepository, IMongoRepository<TAggregate, TId>
+		where TAggregate : class
+		where TDocument : class
+	{
+		private readonly IMongoCollection<TDocument> _collection;
+		private readonly IMapper _mapper;
+		private readonly Func<TAggregate, TId> _aggregateIdSelector;
+		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
+		private readonly Func<TDocument, TId> _getIdFromDocument;
+		private readonly AggregateIdentityMap<TAggregate, TId> _identityMap;
+
+		internal MongoRepository(
+			IMongoCollection<TDocument> collection,
+			IMapper mapper,
+			Func<TAggregate, TId> aggregateIdSelector,
+			Expression<Func<TDocument, TId>> documentIdSelector)
 		{
-			_dbContext = dbContext;
+			_collection = collection;
 			_mapper = mapper;
+			_aggregateIdSelector = aggregateIdSelector;
+			_documentIdSelector = documentIdSelector;
+			_getIdFromDocument = documentIdSelector.Compile();
+			_identityMap = new AggregateIdentityMap<TAggregate, TId>(aggregateIdSelector);
 		}
 
-		public virtual async Task<TAggregate> FindOrDefault(TId id)
+		public async Task<TAggregate> FindOne(TId id)
 		{
-			if (_identityMap.TryGet(id, out TAggregate aggregate))
+			if (!_identityMap.TryGet(id, out TAggregate aggregate))
 			{
-				return aggregate;
-			}
-
-			await _identityMapLock.WaitAsync();
-			try
-			{
-				if (!_identityMap.ContainsEntry(id))
-				{
-					var collection = _dbContext.GetCollection<TDocument>();
-
-					TDocument document = await collection
-						.Find(Builders<TDocument>.Filter.Eq(d => d.Id, id))
+				TDocument document = await _collection
+						.Find(Builders<TDocument>.Filter.Eq(_documentIdSelector, id))
 						.SingleOrDefaultAsync();
 
-					//var document = await collection.FindOneAndUpdateAsync(
-					//	Builders<TDocument>.Filter.Eq(d => d.Id, id),
-					//	Builders<TDocument>.Update.Set(d => d.SessionLock, Guid.NewGuid().ToString()));
-
-					if (document == null)
-					{
-						return null;
-					}
-
-					_identityMap.SetFromLoad(_mapper.ToAggregate(document));
+				if (document == null)
+				{
+					return null;
 				}
-			}
-			finally
-			{
-				_identityMapLock.Release();
+
+				aggregate = _mapper.Map<TAggregate>(document);
+				_identityMap.SetFromLoad(aggregate);
 			}
 
-			return _identityMap.Get(id);
+			return aggregate;
 		}
 
-		public virtual void Add(TAggregate aggregate)
+		public async Task<TAggregate> FindOneWhere(
+			Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query)
+		{
+			var mappedExpression = _mapper.Map<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(query);
+			var compiledQuery = mappedExpression.Compile();
+
+			IMongoQueryable<TDocument> appliedQuery = compiledQuery(_collection.AsQueryable());
+
+			TDocument document = await appliedQuery.SingleOrDefaultAsync();
+			if (document == null)
+			{
+				return null;
+			}
+
+			TId aggregateId = _getIdFromDocument(document);
+			if (!_identityMap.TryGet(aggregateId, out TAggregate aggregate))
+			{
+				aggregate = _mapper.Map<TAggregate>(document);
+				_identityMap.SetFromLoad(aggregate);
+			}
+
+			return aggregate;
+		}
+
+		public async Task<IReadOnlyCollection<TAggregate>> Query(
+			Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query)
+		{
+			var mappedExpression = _mapper.Map<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(query);
+			var compiledQuery = mappedExpression.Compile();
+
+			IMongoQueryable<TDocument> appliedQuery = compiledQuery(_collection.AsQueryable());
+
+			List<TDocument> documents = await appliedQuery.ToListAsync();
+
+			return documents.Select(GetOrMapNewAggregate).ToList();
+		}
+
+		private TAggregate GetOrMapNewAggregate(TDocument document)
+		{
+			TId aggregateId = _getIdFromDocument(document);
+
+			if (!_identityMap.TryGet(aggregateId, out TAggregate aggregate))
+			{
+				aggregate = _mapper.Map<TAggregate>(document);
+				_identityMap.SetFromLoad(aggregate);
+			}
+
+			return aggregate;
+		}
+
+		public void Add(TAggregate aggregate)
 		{
 			Guard.Against.Null(aggregate, nameof(aggregate));
 			_identityMap.Add(aggregate);
 		}
 
-		public virtual void Delete(TAggregate aggregate)
+		public void Delete(TAggregate aggregate)
 		{
 			Guard.Against.Null(aggregate, nameof(aggregate));
 			_identityMap.Delete(aggregate);
@@ -85,15 +135,15 @@ namespace R5.MongoRepository
 
 			IEnumerable<ICommitAggregateOperation> replaceOperations = entries
 				.Where(e => e.State == EntryState.Loaded)
-				.Select(e => new AggregateReplaceOperation<TAggregate, TDocument, TId>(e.Aggregate, _mapper.ToDocument));
+				.Select(e => new AggregateReplaceOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _mapper.Map<TDocument>, _documentIdSelector));
 
 			IEnumerable<ICommitAggregateOperation> insertOperations = entries
 				.Where(e => e.State == EntryState.Added)
-				.Select(e => new AggregateInsertOperation<TAggregate, TDocument, TId>(e.Aggregate, _mapper.ToDocument));
+				.Select(e => new AggregateInsertOperation<TAggregate, TDocument, TId>(e.Aggregate, _mapper.Map<TDocument>));
 
 			IEnumerable<ICommitAggregateOperation> deleteOperations = entries
 				.Where(e => e.State == EntryState.Deleted)
-				.Select(e => new AggregateDeleteOperation<TAggregate, TDocument, TId>(e.Aggregate));
+				.Select(e => new AggregateDeleteOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _documentIdSelector));
 
 			return replaceOperations
 				.Concat(insertOperations)
