@@ -1,14 +1,10 @@
 ﻿using R5.MongoRepository.Core;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-//using LanguageExt;
 using MongoDB.Driver;
-using System.Threading;
 using Ardalis.GuardClauses;
 using System.Linq;
-using MongoDB.Bson;
 using R5.MongoRepository.IdentityMap;
 using R5.MongoRepository.UpdateOperations;
 using System.Linq.Expressions;
@@ -70,34 +66,10 @@ namespace R5.MongoRepository
 
 		public async Task<TAggregate> FindOneWhere(Expression<Func<TAggregate, bool>> predicate)
 		{
-			//var anotherTest2 = _mapper.MapExpression(predicate, typeof(Expression<Func<TAggregate, bool>>), typeof(Expression<Func<TDocument, bool>>));
-			Expression<Func<TDocument, bool>> anotherTest3 = _mapper.MapExpression<Expression<Func<TAggregate, bool>>, Expression<Func<TDocument, bool>>>(predicate);
-
-
-
-
-
-
-
-			//Expression<Func<TDocument, bool>> expr = _mapper.Map<Expression<Func<TDocument, bool>>>(predicate);
+			Expression<Func<TDocument, bool>> mappedPredicate = _mapper.MapExpression<Expression<Func<TAggregate, bool>>, Expression<Func<TDocument, bool>>>(predicate);
 
 			IMongoQueryable<TDocument> queryable = _collection.AsQueryable();
-			TDocument testResult = await queryable.SingleOrDefaultAsync(anotherTest3);
-
-
-
-
-
-			Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> queryExpression
-				= query => query.Where<TAggregate>(predicate);
-
-			var test = _mapper.MapExpression<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(queryExpression);
-			//var mappedExpression = _mapper.Map<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(queryExpression);
-			var compiledQuery = test.Compile();
-
-			IMongoQueryable<TDocument> appliedQuery = compiledQuery(_collection.AsQueryable());
-
-			TDocument document = await appliedQuery.SingleOrDefaultAsync();
+			TDocument document = await queryable.SingleOrDefaultAsync(mappedPredicate);
 			if (document == null)
 			{
 				return null;
@@ -113,40 +85,12 @@ namespace R5.MongoRepository
 			return aggregate;
 		}
 
-		//public async Task<TAggregate> FindOneWhere(
-		//	Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query)
-		//{
-		//	var mappedExpression = _mapper.Map<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(query);
-		//	var compiledQuery = mappedExpression.Compile();
-
-		//	IMongoQueryable<TDocument> appliedQuery = compiledQuery(_collection.AsQueryable());
-
-		//	TDocument document = await appliedQuery.SingleOrDefaultAsync();
-		//	if (document == null)
-		//	{
-		//		return null;
-		//	}
-
-		//	TId aggregateId = _getIdFromDocument(document);
-		//	if (!_identityMap.TryGet(aggregateId, out TAggregate aggregate))
-		//	{
-		//		aggregate = _mapper.Map<TAggregate>(document);
-		//		_identityMap.SetFromLoad(aggregate);
-		//	}
-
-		//	return aggregate;
-		//}
-
-		public async Task<IReadOnlyCollection<TAggregate>> Query(
-			Expression<Func<IMongoQueryable<TAggregate>, IMongoQueryable<TAggregate>>> query)
+		public async Task<IReadOnlyCollection<TAggregate>> Query(Expression<Func<TAggregate, bool>> predicate)
 		{
-			//var t = MongoQueryable.
-			var mappedExpression = _mapper.Map<Expression<Func<IMongoQueryable<TDocument>, IMongoQueryable<TDocument>>>>(query);
-			var compiledQuery = mappedExpression.Compile();
+			Expression<Func<TDocument, bool>> mappedPredicate = _mapper.MapExpression<Expression<Func<TAggregate, bool>>, Expression<Func<TDocument, bool>>>(predicate);
 
-			IMongoQueryable<TDocument> appliedQuery = compiledQuery(_collection.AsQueryable());
-
-			List<TDocument> documents = await appliedQuery.ToListAsync();
+			IMongoQueryable<TDocument> queryable = _collection.AsQueryable();
+			List<TDocument> documents = await queryable.Where(mappedPredicate).ToListAsync();
 
 			return documents.Select(GetOrMapNewAggregate).ToList();
 		}

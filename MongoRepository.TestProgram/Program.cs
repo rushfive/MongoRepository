@@ -80,11 +80,30 @@ namespace R5.MongoRepository.TestProgram
 			SampleMongoDbContext dbContext = builder.Create();
 
 
+
 			var built = "YAY";
 
 			var kId = Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471");
 
 			var kPatient1 = await dbContext.Patients.FindOne(kId);
+
+			var leeIDs = new List<Guid>
+			{
+				Guid.Parse("50a1ab44-a4a9-4b64-9d80-960efd854471"),
+				Guid.Parse("2bdb3340-b2be-41f5-8160-36ea231aafd0"),
+				Guid.Parse("664452b7-9525-4dac-ae20-df720beacd5b")
+			};
+
+			IReadOnlyCollection<Patient> aBunchOfLees = await dbContext.Patients.Query(p => leeIDs.Contains(p.Id));
+
+
+
+			var matchingKPatient = aBunchOfLees.Single(p => p.Id == kId);
+
+			bool isSameRef = object.ReferenceEquals(kPatient1, matchingKPatient);
+			
+			
+			
 			var kPatient2 = await dbContext.Patients.FindOneWhere(p => p.Id == kId);
 
 
