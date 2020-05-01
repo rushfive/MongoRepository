@@ -4,9 +4,9 @@ using System;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace R5.MongoRepository.UpdateOperations
+namespace R5.MongoRepository.CommitOperations
 {
-	public sealed class AggregateDeleteOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	public sealed class DeleteOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : class
 		where TDocument : class
 	{
@@ -14,7 +14,7 @@ namespace R5.MongoRepository.UpdateOperations
 		private readonly TAggregate _aggregate;
 		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
 
-		public AggregateDeleteOperation(
+		public DeleteOperation(
 			TId aggregateId,
 			TAggregate aggregate,
 			Expression<Func<TDocument, TId>> documentIdSelector)

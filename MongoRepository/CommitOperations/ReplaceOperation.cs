@@ -4,9 +4,9 @@ using System;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace R5.MongoRepository.UpdateOperations
+namespace R5.MongoRepository.CommitOperations
 {
-	public sealed class AggregateReplaceOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	public sealed class ReplaceOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : class
 		where TDocument : class
 	{
@@ -15,7 +15,7 @@ namespace R5.MongoRepository.UpdateOperations
 		private readonly Func<TAggregate, TDocument> _toDocument;
 		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
 
-		public AggregateReplaceOperation(
+		public ReplaceOperation(
 			TId aggregateId,
 			TAggregate aggregate,
 			Func<TAggregate, TDocument> toDocument,

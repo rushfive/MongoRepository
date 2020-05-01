@@ -9,7 +9,7 @@ namespace R5.MongoRepository.IdentityMap
 		where TAggregate : class
 	{
 		private readonly Func<TAggregate, TId> _idSelector;
-		private readonly Dictionary<TId, Entry> _entries = new Dictionary<TId, Entry>();
+		private readonly Dictionary<TId, Entry<TAggregate>> _entries = new Dictionary<TId, Entry<TAggregate>>();
 
 		// caches the aggregate hash values when loaded. compared to the hash computed
 		// before commits to determine the need for a replace op
@@ -27,7 +27,7 @@ namespace R5.MongoRepository.IdentityMap
 
 		public TAggregate Get(TId id)
 		{
-			if (_entries.TryGetValue(id, out Entry entry)
+			if (_entries.TryGetValue(id, out Entry<TAggregate> entry)
 				&& entry.State != EntryState.Deleted)
 			{
 				return entry.Aggregate;
@@ -38,7 +38,7 @@ namespace R5.MongoRepository.IdentityMap
 
 		public bool TryGet(TId id, out TAggregate aggregate)
 		{
-			if (_entries.TryGetValue(id, out Entry entry)
+			if (_entries.TryGetValue(id, out Entry<TAggregate> entry)
 				&& entry.State != EntryState.Deleted)
 			{
 				aggregate = entry.Aggregate;
@@ -51,14 +51,14 @@ namespace R5.MongoRepository.IdentityMap
 
 		public void Add(TAggregate aggregate)
 		{
-			_entries.Add(_idSelector(aggregate), Entry.AddedInMemory(aggregate));
+			_entries.Add(_idSelector(aggregate), Entry<TAggregate>.AddedInMemory(aggregate));
 		}
 
 		public void SetFromLoad(TAggregate aggregate)
 		{
 			TId aggregateId = _idSelector(aggregate);
 
-			_entries.Add(aggregateId, Entry.LoadedFromDatabase(aggregate));
+			_entries.Add(aggregateId, Entry<TAggregate>.LoadedFromDatabase(aggregate));
 
 			AggregateIdentityHasher hasher = AggregateIdentityHasherCache.GetFor(aggregate);
 			_loadedEntryHashes[aggregateId] = hasher.ComputeFor(aggregate);
@@ -68,7 +68,7 @@ namespace R5.MongoRepository.IdentityMap
 		{
 			TId aggregateId = _idSelector(aggregate);
 
-			if (!_entries.TryGetValue(aggregateId, out Entry entry))
+			if (!_entries.TryGetValue(aggregateId, out Entry<TAggregate> entry))
 			{
 				throw new ArgumentException($"Entry for aggregate '{aggregateId}' doesn't exist in identity map.", nameof(aggregateId));
 			}
@@ -76,12 +76,12 @@ namespace R5.MongoRepository.IdentityMap
 		}
 
 		// not all entries need an operation executed..
-		public List<Entry> GetCommitableEntries()
+		public List<Entry<TAggregate>> GetCommitableEntries()
 			=> _entries.Values
 				.Where(RequiresCommitOperation)
 				.ToList();
 
-		private bool RequiresCommitOperation(Entry entry)
+		private bool RequiresCommitOperation(Entry<TAggregate> entry)
 		{
 			TId aggregateId = _idSelector(entry.Aggregate);
 
@@ -109,27 +109,6 @@ namespace R5.MongoRepository.IdentityMap
 			_loadedEntryHashes.Clear();
 		}
 
-		public class Entry
-		{
-			public readonly TAggregate Aggregate;
-			public EntryState State { get; private set; }
-
-			private Entry(TAggregate aggregate, EntryState state)
-			{
-				Aggregate = aggregate;
-				State = state;
-			}
-
-			internal static Entry LoadedFromDatabase(TAggregate aggregate)
-				=> new Entry(aggregate, EntryState.Loaded);
-
-			internal static Entry AddedInMemory(TAggregate aggregate)
-				=> new Entry(aggregate, EntryState.Added);
-
-			internal void MarkAsDeleted()
-			{
-				State = EntryState.Deleted;
-			}
-		}
+		
 	}
 }
