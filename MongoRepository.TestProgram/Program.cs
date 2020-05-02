@@ -38,47 +38,21 @@ namespace R5.MongoRepository.TestProgram
 		/*
 			- find a patient (now in session), then update that patient in robo.
 				on trying to commiot, get write exception
-		 */ 
+		 */
+
+
+		/*
+		 
+		 */
 
 		static async Task Main(string[] args)
 		{
+			Func<IMongoDatabase, SampleMongoDbContext> dbContextFactory = GetDbContextFactory();
 			IMongoDatabase database = MongoDatabaseFactory.Create();
 
-			var builder = MongoRepositoryDbContextBuilder.For<SampleMongoDbContext>(database);
-
-			builder.RegisterRepositoryFor<Patient, PatientDocument, Guid>(
-				aggregate => aggregate.Id,
-				document => document.Id,
-				config =>
-				{
-					config
-						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id))
-						.ForMember(d => d.FirstName, c => c.MapFrom(a => a.FullName.Split(' ', StringSplitOptions.None)[0]))
-						.ForMember(d => d.LastName, c => c.MapFrom(a => a.FullName.Split(' ', StringSplitOptions.None)[1]));
-				},
-				config =>
-				{
-					config
-						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id))
-						.ForMember(d => d.FullName, c => c.MapFrom(a => $"{a.FirstName} {a.LastName}".Trim()));
-				});
-
-			builder.RegisterRepositoryFor<Appointment, AppointmentDocument, Guid>(
-				aggregate => aggregate.Id,
-				document => document.Id,
-				config =>
-				{
-					config
-						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id));
-				},
-				config =>
-				{
-					config
-						.ForMember(d => d.Id, c => c.MapFrom(a => a.Id));
-				});
-
-			SampleMongoDbContext dbContext = builder.Create();
-
+			var dbContext = dbContextFactory(database);
+			//var dbContext = GetDbContext(database);
+			//var dbContext = CreateDbContext_OLD(database);
 
 
 			var built = "YAY";
@@ -116,6 +90,15 @@ namespace R5.MongoRepository.TestProgram
 			Console.WriteLine("Testing completed.");
 			Console.ReadKey();
 		}
+
+		private static Func<IMongoDatabase, SampleMongoDbContext> GetDbContextFactory()
+		{
+			return MongoRepositoryDbContextFactoryBuilder.For<SampleMongoDbContext>()
+				.RegisterRepository(new AppointmentAggregateConfiguration())
+				.RegisterRepository(new PatientAggregateConfiguration())
+				.CreateFactory();
+		}
+
 
 		static async Task Test2()
 		{

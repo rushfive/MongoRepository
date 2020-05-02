@@ -25,7 +25,6 @@ namespace R5.MongoRepository
 	{
 		private readonly IMongoCollection<TDocument> _collection;
 		private readonly IMapper _mapper;
-		private readonly Func<TAggregate, TId> _aggregateIdSelector;
 		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
 		private readonly Func<TDocument, TId> _getIdFromDocument;
 		private readonly AggregateIdentityMap<TAggregate, TId> _identityMap;
@@ -39,7 +38,6 @@ namespace R5.MongoRepository
 		{
 			_collection = collection;
 			_mapper = mapper;
-			_aggregateIdSelector = aggregateIdSelector;
 			_documentIdSelector = documentIdSelector;
 			_getIdFromDocument = documentIdSelector.Compile();
 			_identityMap = new AggregateIdentityMap<TAggregate, TId>(aggregateIdSelector);
@@ -126,22 +124,6 @@ namespace R5.MongoRepository
 		{
 			List<Entry<TAggregate>> entries = _identityMap.GetCommitableEntries();
 			return _entryToOperationConverter.GetOperations(entries);
-			//IEnumerable<ICommitAggregateOperation> replaceOperations = entries
-			//	.Where(e => e.State == EntryState.Loaded)
-			//	.Select(e => new ReplaceOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _mapper.Map<TDocument>, _documentIdSelector));
-
-			//IEnumerable<ICommitAggregateOperation> insertOperations = entries
-			//	.Where(e => e.State == EntryState.Added)
-			//	.Select(e => new InsertOperation<TAggregate, TDocument, TId>(e.Aggregate, _mapper.Map<TDocument>));
-
-			//IEnumerable<ICommitAggregateOperation> deleteOperations = entries
-			//	.Where(e => e.State == EntryState.Deleted)
-			//	.Select(e => new DeleteOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _documentIdSelector));
-
-			//return replaceOperations
-			//	.Concat(insertOperations)
-			//	.Concat(deleteOperations)
-			//	.ToList();
 		}
 
 		public void OnTransactionCommitOrAborted()
