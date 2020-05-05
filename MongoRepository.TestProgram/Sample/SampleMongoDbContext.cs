@@ -13,8 +13,9 @@ namespace R5.MongoRepository.TestProgram.Sample
 	public sealed class SampleMongoDbContext : MongoRepositoryDbContext
 	{
 		public SampleMongoDbContext(
-			Dictionary<Type, MongoRepository> repositories) 
-			: base(repositories)
+			Dictionary<Type, MongoRepository> repositories,
+			IMongoDatabase database) 
+			: base(repositories, database)
 		{
 		}
 

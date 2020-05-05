@@ -1,36 +1,28 @@
-﻿using R5.MongoRepository.Core;
+﻿using MongoDB.Driver;
+using R5.MongoRepository.Core;
 using System;
 using System.Threading.Tasks;
 
 namespace R5.MongoRepository.CommitOperations
 {
-	public sealed class InsertOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	internal sealed class InsertOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : class
 		where TDocument : class
 	{
-		private readonly TAggregate _aggregate;
-		private readonly Func<TAggregate, TDocument> _toDocument;
+		private readonly IMongoCollection<TDocument> _collection;
+		private readonly TDocument _document;
 
-		public InsertOperation(
-			TAggregate aggregate,
-			Func<TAggregate, TDocument> toDocument)
+		internal InsertOperation(
+			IMongoCollection<TDocument> collection,
+			TDocument document)
 		{
-			_aggregate = aggregate;
-			_toDocument = toDocument;
+			_collection = collection;
+			_document = document;
 		}
 
-		public void Execute(IMongoSessionContext sessionContext)
+		public Task ExecuteAsync(IClientSessionHandle session)
 		{
-			TDocument document = _toDocument(_aggregate);
-
-			sessionContext.GetCollection<TDocument>().InsertOne(document);
-		}
-
-		public Task ExecuteAsync(IMongoSessionContext sessionContext)
-		{
-			TDocument document = _toDocument(_aggregate);
-
-			return sessionContext.GetCollection<TDocument>().InsertOneAsync(document);
+			return _collection.InsertOneAsync(session, _document);
 		}
 	}
 }

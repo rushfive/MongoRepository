@@ -6,45 +6,32 @@ using System.Threading.Tasks;
 
 namespace R5.MongoRepository.CommitOperations
 {
-	public sealed class ReplaceOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	internal sealed class ReplaceOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : class
 		where TDocument : class
 	{
-		private readonly TId _aggregateId;
-		private readonly TAggregate _aggregate;
-		private readonly Func<TAggregate, TDocument> _toDocument;
-		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
+		private readonly IMongoCollection<TDocument> _collection;
+		private readonly FilterDefinition<TDocument> _matchByIdFilter;
+		private readonly TDocument _document;
 
-		public ReplaceOperation(
-			TId aggregateId,
-			TAggregate aggregate,
-			Func<TAggregate, TDocument> toDocument,
-			Expression<Func<TDocument, TId>> documentIdSelector)
+		internal ReplaceOperation(
+			IMongoCollection<TDocument> collection,
+			FilterDefinition<TDocument> matchByIdFilter,
+			TDocument document)
 		{
-			_aggregateId = aggregateId;
-			_aggregate = aggregate;
-			_toDocument = toDocument;
-			_documentIdSelector = documentIdSelector;
+			_collection = collection;
+			_matchByIdFilter = matchByIdFilter;
+			_document = document;
 		}
 
-		public void Execute(IMongoSessionContext sessionContext)
+		public Task ExecuteAsync(IClientSessionHandle session)
 		{
-			TDocument document = _toDocument(_aggregate);
+			return _collection.ReplaceOneAsync(session, _matchByIdFilter, _document);
 
-			sessionContext.GetCollection<TDocument>()
-				.ReplaceOne(
-					Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId),
-					document);
-		}
-
-		public Task ExecuteAsync(IMongoSessionContext sessionContext)
-		{
-			TDocument document = _toDocument(_aggregate);
-
-			return sessionContext.GetCollection<TDocument>()
-				.ReplaceOneAsync(
-					Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId),
-					document);
+			//return sessionContext.GetCollection<TDocument>()
+			//	.ReplaceOneAsync(
+			//		Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId),
+			//		document);
 		}
 	}
 }

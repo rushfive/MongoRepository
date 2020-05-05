@@ -1,16 +1,7 @@
-﻿using R5.MongoRepository.Core;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using MongoDB.Driver;
-using Ardalis.GuardClauses;
-using System.Linq;
-using R5.MongoRepository.IdentityMap;
+﻿using System;
 using System.Linq.Expressions;
-using MongoDB.Driver.Linq;
 using AutoMapper;
 using AutoMapper.Extensions.ExpressionMapping;
-using R5.MongoRepository.CommitOperations;
 
 namespace R5.MongoRepository
 {
@@ -22,7 +13,6 @@ namespace R5.MongoRepository
 		private readonly Func<TAggregate, TId> _aggregateIdSelector;
 		private readonly Func<TDocument, TId> _documentIdSelector;
 		
-
 		internal AggregateMapper(
 			IMapper mapper,
 			Func<TAggregate, TId> aggregateIdSelector,

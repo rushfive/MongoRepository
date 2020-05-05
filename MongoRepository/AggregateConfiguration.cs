@@ -16,10 +16,5 @@ namespace R5.MongoRepository
 
 		Action<IMappingExpression<TAggregate, TDocument>> ToDocumentMappings { get; }
 		Action<IMappingExpression<TDocument, TAggregate>> ToAggregateMappings { get; }
-
-		internal EntryToOperationConverter<TAggregate, TDocument, TId> CreateEntryToOperationConverter(IMapper mapper)
-		{
-			return new EntryToOperationConverter<TAggregate, TDocument, TId>(mapper, AggregateIdSelector, DocumentIdSelector);
-		}
 	}
 }

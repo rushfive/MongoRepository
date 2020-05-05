@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
+using MongoDB.Driver;
 using R5.MongoRepository.Core;
 using R5.MongoRepository.IdentityMap;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
 
 namespace R5.MongoRepository.CommitOperations
 {
@@ -13,38 +11,60 @@ namespace R5.MongoRepository.CommitOperations
 		where TAggregate : class
 		where TDocument : class
 	{
-		private readonly IMapper _mapper;
-		private readonly Func<TAggregate, TId> _aggregateIdSelector;
-		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
+		private readonly IMongoCollection<TDocument> _collection;
+		private readonly AggregateMapper<TAggregate, TDocument, TId> _mapper;
+		private readonly FilterDefinitionResolver<TDocument, TId> _filterResolver;
 
 		internal EntryToOperationConverter(
-			IMapper mapper,
-			Func<TAggregate, TId> aggregateIdSelector,
-			Expression<Func<TDocument, TId>> documentIdSelector)
+			IMongoCollection<TDocument> collection,
+			AggregateMapper<TAggregate, TDocument, TId> mapper,
+			FilterDefinitionResolver<TDocument, TId> filterResolver)
 		{
+			_collection = collection;
 			_mapper = mapper;
-			_aggregateIdSelector = aggregateIdSelector;
-			_documentIdSelector = documentIdSelector;
+			_filterResolver = filterResolver;
 		}
 
 		internal List<ICommitAggregateOperation> GetOperations(List<Entry<TAggregate>> entries)
 		{
 			IEnumerable<ICommitAggregateOperation> replaceOperations = entries
 				.Where(e => e.State == EntryState.Loaded)
-				.Select(e => new ReplaceOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _mapper.Map<TDocument>, _documentIdSelector));
+				.Select(ToReplaceOperation);
 
 			IEnumerable<ICommitAggregateOperation> insertOperations = entries
 				.Where(e => e.State == EntryState.Added)
-				.Select(e => new InsertOperation<TAggregate, TDocument, TId>(e.Aggregate, _mapper.Map<TDocument>));
+				.Select(ToInsertOperation);
 
 			IEnumerable<ICommitAggregateOperation> deleteOperations = entries
 				.Where(e => e.State == EntryState.Deleted)
-				.Select(e => new DeleteOperation<TAggregate, TDocument, TId>(_aggregateIdSelector(e.Aggregate), e.Aggregate, _documentIdSelector));
+				.Select(ToDeleteOperation);
 
 			return replaceOperations
 				.Concat(insertOperations)
 				.Concat(deleteOperations)
 				.ToList();
+		}
+
+		private ReplaceOperation<TAggregate, TDocument, TId> ToReplaceOperation(Entry<TAggregate> e)
+		{
+			FilterDefinition<TDocument> filter = _filterResolver.MatchById(_mapper.GetIdFrom(e.Aggregate));
+			TDocument document = _mapper.ToDocument(e.Aggregate);
+
+			return new ReplaceOperation<TAggregate, TDocument, TId>(_collection, filter, document);
+		}
+
+		private InsertOperation<TAggregate, TDocument, TId> ToInsertOperation(Entry<TAggregate> e)
+		{
+			TDocument document = _mapper.ToDocument(e.Aggregate);
+
+			return new InsertOperation<TAggregate, TDocument, TId>(_collection, document);
+		}
+
+		private DeleteOperation<TAggregate, TDocument, TId> ToDeleteOperation(Entry<TAggregate> e)
+		{
+			FilterDefinition<TDocument> filter = _filterResolver.MatchById(_mapper.GetIdFrom(e.Aggregate));
+
+			return new DeleteOperation<TAggregate, TDocument, TId>(_collection, filter);
 		}
 	}
 }

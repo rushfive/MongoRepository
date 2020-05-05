@@ -17,6 +17,8 @@ namespace R5.MongoRepository
 	public abstract class MongoRepository
 	{
 		internal MongoRepository() { }
+		internal abstract List<ICommitAggregateOperation> GetCommitOperations();
+		internal abstract void ClearCachedAggregateStates();
 	}
 
 	public sealed class MongoRepository<TAggregate, TDocument, TId> : MongoRepository, IMongoRepository<TAggregate, TId>
@@ -24,32 +26,33 @@ namespace R5.MongoRepository
 		where TDocument : class
 	{
 		private readonly IMongoCollection<TDocument> _collection;
-		private readonly IMapper _mapper;
-		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
-		private readonly Func<TDocument, TId> _getIdFromDocument;
+		private readonly AggregateMapper<TAggregate, TDocument, TId> _mapper;
 		private readonly AggregateIdentityMap<TAggregate, TId> _identityMap;
+		private readonly FilterDefinitionResolver<TDocument, TId> _filterResolver;
 		private readonly EntryToOperationConverter<TAggregate, TDocument, TId> _entryToOperationConverter;
 
 		internal MongoRepository(
 			IMongoCollection<TDocument> collection,
-			IMapper mapper,
-			Func<TAggregate, TId> aggregateIdSelector,
-			Expression<Func<TDocument, TId>> documentIdSelector)
+			AggregateMapper<TAggregate, TDocument, TId> mapper,
+			AggregateIdentityMap<TAggregate, TId> identityMap,
+			FilterDefinitionResolver<TDocument, TId> filterResolver,
+			EntryToOperationConverter<TAggregate, TDocument, TId> entryToOperationConverter)
 		{
 			_collection = collection;
 			_mapper = mapper;
-			_documentIdSelector = documentIdSelector;
-			_getIdFromDocument = documentIdSelector.Compile();
-			_identityMap = new AggregateIdentityMap<TAggregate, TId>(aggregateIdSelector);
-			_entryToOperationConverter = new EntryToOperationConverter<TAggregate, TDocument, TId>(mapper, aggregateIdSelector, documentIdSelector);
+			_identityMap = identityMap;
+			_filterResolver = filterResolver;
+			_entryToOperationConverter = entryToOperationConverter;
 		}
 
 		public async Task<TAggregate> FindOne(TId id)
 		{
 			if (!_identityMap.TryGet(id, out TAggregate aggregate))
 			{
+				FilterDefinition<TDocument> filter = _filterResolver.MatchById(id);
+
 				TDocument document = await _collection
-						.Find(Builders<TDocument>.Filter.Eq(_documentIdSelector, id))
+						.Find(filter)
 						.SingleOrDefaultAsync();
 
 				if (document == null)
@@ -57,7 +60,7 @@ namespace R5.MongoRepository
 					return null;
 				}
 
-				aggregate = _mapper.Map<TAggregate>(document);
+				aggregate = _mapper.ToAggregate(document);
 				_identityMap.SetFromLoad(aggregate);
 			}
 
@@ -75,10 +78,10 @@ namespace R5.MongoRepository
 				return null;
 			}
 
-			TId aggregateId = _getIdFromDocument(document);
+			TId aggregateId = _mapper.GetIdFrom(document);
 			if (!_identityMap.TryGet(aggregateId, out TAggregate aggregate))
 			{
-				aggregate = _mapper.Map<TAggregate>(document);
+				aggregate = _mapper.ToAggregate(document);
 				_identityMap.SetFromLoad(aggregate);
 			}
 
@@ -97,11 +100,11 @@ namespace R5.MongoRepository
 
 		private TAggregate GetOrMapNewAggregate(TDocument document)
 		{
-			TId aggregateId = _getIdFromDocument(document);
+			TId aggregateId = _mapper.GetIdFrom(document);
 
 			if (!_identityMap.TryGet(aggregateId, out TAggregate aggregate))
 			{
-				aggregate = _mapper.Map<TAggregate>(document);
+				aggregate = _mapper.ToAggregate(document);
 				_identityMap.SetFromLoad(aggregate);
 			}
 
@@ -120,13 +123,13 @@ namespace R5.MongoRepository
 			_identityMap.Delete(aggregate);
 		}
 
-		public List<ICommitAggregateOperation> GetCommitOperations()
+		internal override List<ICommitAggregateOperation> GetCommitOperations()
 		{
 			List<Entry<TAggregate>> entries = _identityMap.GetCommitableEntries();
 			return _entryToOperationConverter.GetOperations(entries);
 		}
 
-		public void OnTransactionCommitOrAborted()
+		internal override void ClearCachedAggregateStates()
 		{
 			_identityMap.Reset();
 		}

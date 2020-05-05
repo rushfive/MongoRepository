@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace R5.MongoRepository.Core
 {
-	public interface IMongoRepository<TAggregate, TId> : IAggregateOperationStore, ISessionIdentityCache
+	public interface IMongoRepository<TAggregate, TId>// : IAggregateOperationStore, ISessionIdentityCache
 		where TAggregate : class
 	{
 		Task<TAggregate> FindOne(TId id);

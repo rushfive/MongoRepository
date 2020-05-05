@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using LanguageExt;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using R5.MongoRepository.Core;
 using R5.MongoRepository.TestProgram.Sample;
@@ -70,6 +71,12 @@ namespace R5.MongoRepository.TestProgram
 
 			IReadOnlyCollection<Patient> aBunchOfLees = await dbContext.Patients.Query(p => leeIDs.Contains(p.Id));
 
+			var testId = Guid.Parse("664452b7-9525-4dac-ae20-df720beacd5b");
+			var somebody = await dbContext.Patients.FindOne(testId);
+
+			var matchingFromList = aBunchOfLees.Single(p => p.Id == testId);
+
+			bool isSameMatching = object.ReferenceEquals(somebody, matchingFromList);
 
 
 			var matchingKPatient = aBunchOfLees.Single(p => p.Id == kId);
@@ -128,7 +135,7 @@ namespace R5.MongoRepository.TestProgram
 
 			_dbContext.Patients.Delete(isaiah);
 
-			await _dbContext.Commit();
+			await _dbContext.SaveChanges();
 
 			isaiah = await _dbContext.Patients.FindOne(isaiahId);
 			isaiah.FullName += "what";
@@ -160,7 +167,7 @@ namespace R5.MongoRepository.TestProgram
 
 
 
-			await _dbContext.Commit();
+			await _dbContext.SaveChanges();
 
 			_dbContext.Patients.Add(new Patient
 			{
@@ -168,7 +175,7 @@ namespace R5.MongoRepository.TestProgram
 				FullName = "PostFirstCommit PatientAdd"
 			});
 
-			await _dbContext.Commit();
+			await _dbContext.SaveChanges();
 		}
 
 		static void CreateTestCollections()

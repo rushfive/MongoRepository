@@ -1,39 +1,30 @@
 ﻿using MongoDB.Driver;
 using R5.MongoRepository.Core;
-using System;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace R5.MongoRepository.CommitOperations
 {
-	public sealed class DeleteOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
+	internal sealed class DeleteOperation<TAggregate, TDocument, TId> : ICommitAggregateOperation
 		where TAggregate : class
 		where TDocument : class
 	{
-		private readonly TId _aggregateId;
-		private readonly TAggregate _aggregate;
-		private readonly Expression<Func<TDocument, TId>> _documentIdSelector;
+		private readonly IMongoCollection<TDocument> _collection;
+		private readonly FilterDefinition<TDocument> _matchByIdFilter;
 
-		public DeleteOperation(
-			TId aggregateId,
-			TAggregate aggregate,
-			Expression<Func<TDocument, TId>> documentIdSelector)
+		internal DeleteOperation(
+			IMongoCollection<TDocument> collection,
+			FilterDefinition<TDocument> matchByIdFilter)
 		{
-			_aggregateId = aggregateId;
-			_aggregate = aggregate;
-			_documentIdSelector = documentIdSelector;
+			_collection = collection;
+			_matchByIdFilter = matchByIdFilter;
 		}
 
-		public void Execute(IMongoSessionContext sessionContext)
+		public Task ExecuteAsync(IClientSessionHandle session)
 		{
-			sessionContext.GetCollection<TDocument>()
-				.DeleteOneAsync(Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId));
-		}
+			return _collection.DeleteOneAsync(session, _matchByIdFilter);
 
-		public Task ExecuteAsync(IMongoSessionContext sessionContext)
-		{
-			return sessionContext.GetCollection<TDocument>()
-				.DeleteOneAsync(Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId));
+			//return sessionContext.GetCollection<TDocument>()
+			//	.DeleteOneAsync(Builders<TDocument>.Filter.Eq(_documentIdSelector, _aggregateId));
 		}
 	}
 }

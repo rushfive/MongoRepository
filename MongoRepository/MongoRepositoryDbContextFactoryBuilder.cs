@@ -1,6 +1,8 @@
 ﻿using Ardalis.GuardClauses;
 using AutoMapper;
 using MongoDB.Driver;
+using R5.MongoRepository.CommitOperations;
+using R5.MongoRepository.IdentityMap;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,7 +99,15 @@ namespace R5.MongoRepository
 					try
 					{
 						IMongoCollection<TDocument> collection = database.GetCollection<TDocument>(collectionName);
-						return new MongoRepository<TAggregate, TDocument, TId>(collection, mapper, configuration.AggregateIdSelector, configuration.DocumentIdSelector);
+						var aggregateMapper = new AggregateMapper<TAggregate, TDocument, TId>(mapper, configuration.AggregateIdSelector, configuration.DocumentIdSelector);
+						var filterResolver = new FilterDefinitionResolver<TDocument, TId>(configuration.DocumentIdSelector);
+
+						return new MongoRepository<TAggregate, TDocument, TId>(
+							collection,
+							aggregateMapper,
+							new AggregateIdentityMap<TAggregate, TId>(configuration.AggregateIdSelector),
+							filterResolver,
+							new EntryToOperationConverter<TAggregate, TDocument, TId>(collection, aggregateMapper, filterResolver));
 					}
 					catch (TypeInitializationException ex)
 					{
@@ -129,7 +139,7 @@ namespace R5.MongoRepository
 					kv => kv.Key,
 					kv => kv.Value.Invoke(mapper, database));
 
-				return (TDbContext)Activator.CreateInstance(typeof(TDbContext), repositories);
+				return (TDbContext)Activator.CreateInstance(typeof(TDbContext), repositories, database);
 			};
 		}
 	}
